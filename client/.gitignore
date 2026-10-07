@@ -1,0 +1,6 @@
+# Build output & deps - never push
+dist/
+node_modules/
+.env
+.env.local
+*.log

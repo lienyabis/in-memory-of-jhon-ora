@@ -1,0 +1,7 @@
+# Local secrets & runtime data - never push
+.env
+db.json
+uploads/*
+!uploads/.gitkeep
+node_modules/
+*.log

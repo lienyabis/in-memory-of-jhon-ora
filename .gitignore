@@ -1,0 +1,47 @@
+# ===== Dependencies =====
+node_modules/
+**/node_modules/
+
+# ===== Build outputs =====
+dist/
+build/
+**/dist/
+**/build/
+out/
+.next/
+coverage/
+
+# ===== Env & secrets (NEVER commit) =====
+.env
+.env.local
+.env.*.local
+*.env
+server/.env
+server/db.json
+
+# ===== Runtime / user uploads =====
+server/uploads/*
+!server/uploads/.gitkeep
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+
+# ===== Misc =====
+.cache/
+*.tsbuildinfo
