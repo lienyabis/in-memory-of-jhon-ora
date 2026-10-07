@@ -30,10 +30,12 @@ router.delete('/comments/:id', (req, res) => {
   const [rm] = db.comments.splice(idx,1); save(db);
   try{
     const fs=require('fs'); const path=require('path');
+    const { DATA_DIR } = require('../db');
     const all = [...(Array.isArray(rm.images)?rm.images:[]), ...(rm.image?[rm.image]:[])];
     [...new Set(all)].forEach(u=>{
-      const p=path.join(__dirname,'..',String(u).replace('/uploads/','uploads/').replace(/^\/+/,''));
-      if(p.includes('uploads') && fs.existsSync(p)) fs.unlinkSync(p);
+      const name = path.basename(String(u));
+      const p = path.join(DATA_DIR, 'uploads', name);
+      if(fs.existsSync(p)) fs.unlinkSync(p);
     });
   }catch{}
   res.json({ ok:true });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import api, { imgUrl } from '../api';
 import useReveal from '../useReveal';
 function imgs(m){ if(Array.isArray(m.images)&&m.images.length) return m.images; return m.image?[m.image]:[]; }
 export default function Home(){
@@ -30,8 +30,8 @@ export default function Home(){
       {latest.map(([yr,items])=><div key={yr}>
         <div className="year reveal">{yr}</div>
         <div className="grid">{items.slice(0,6).map(m=>{ const a=imgs(m); return <div key={m.id} className="card mem reveal">
-          {a[0] && <img className="main" src={a[0]} alt="memory" onClick={()=>setLight(a[0])} />}
-          {a.length>1 && <div className="thumbs">{a.slice(1,5).map((s,i)=><img key={i} src={s} alt="" onClick={()=>setLight(s)} />)}{a.length>5 && <span className="badge">+{a.length-5} more</span>}</div>}
+          {a[0] && <img className="main" src={imgUrl(a[0])} alt="memory" onClick={()=>setLight(imgUrl(a[0]))} />}
+          {a.length>1 && <div className="thumbs">{a.slice(1,5).map((s,i)=><img key={i} src={imgUrl(s)} alt="" onClick={()=>setLight(imgUrl(s))} />)}{a.length>5 && <span className="badge">+{a.length-5} more</span>}</div>}
           <div style={{marginTop:8}}><b>{m.name}</b> <span className="badge">{m.relation}{m.batchLevel?` • ${m.batchLevel}`:''}</span></div>
           <p style={{fontFamily:'Arial',fontSize:14}}>{m.message.slice(0,160)}</p>
         </div>;})}</div>

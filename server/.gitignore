@@ -1,6 +1,7 @@
 # Local secrets & runtime data - never push
 .env
 db.json
+client_dist/
 uploads/*
 !uploads/.gitkeep
 node_modules/
