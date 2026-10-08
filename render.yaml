@@ -1,10 +1,12 @@
 services:
   # Frontend only: React SPA built to static files, served free on Render.
   # Backend is pure PHP + MySQL hosted on InfinityFree (see backend/ + README).
+  # NOTE: static sites must NOT have a `plan` field — Render rejects
+  # `plan: free` on web services with "no such plan free for service type web".
+  # (Static sites are always free; omit plan entirely.)
   - type: web
     name: jhon-ora-memorial
     runtime: static
-    plan: free
     rootDir: memorial-website/client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
