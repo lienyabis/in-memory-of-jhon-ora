@@ -8,7 +8,7 @@ export default function Home(){
   const [light,setLight]=useState('');
   useEffect(()=>{ api.get('/api/comments').then(r=>setData(r.data)).catch(()=>{}); },[]);
   useReveal(data);
-  const latest = data ? Object.entries(data.byYear).sort((a,b)=>b[0]-a[0]).slice(0,1) : [];
+  const latest = data && typeof data === 'object' && data.byYear ? Object.entries(data.byYear).sort((a,b)=>b[0]-a[0]).slice(0,1) : [];
   return <>
     <div className="hero">
       <div style={{letterSpacing:4,fontSize:13,color:'#64748b'}}>IN LOVING MEMORY 🕊️</div>
