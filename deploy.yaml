@@ -17,6 +17,9 @@ services:
         source: /*
         destination: /index.html
     envVars:
+      # Pin the Node version Render uses for the build (vite 5 works on 24).
+      - key: NODE_VERSION
+        value: 24.21.0
       # Set this in Render dashboard (do NOT commit):
       # e.g. https://your-backend.infinityfreeapp.com
       - key: VITE_API_URL
