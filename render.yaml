@@ -5,9 +5,9 @@ services:
   # `plan: free` on web services with "no such plan free for service type web".
   # (Static sites are always free; omit plan entirely.)
   - type: web
-    name: jhon-ora-memorial
+    name: jhon-ora-memorial-blueprint
     runtime: static
-    rootDir: in-memory-of-jhon-ora/client/
+    rootDir: in-memory-of-jhon-ora/client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     autoDeploy: true
