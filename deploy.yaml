@@ -7,7 +7,7 @@ services:
   - type: web
     name: in-memory-of-jhon-ora
     runtime: static
-    rootDir: in-memory-of-jhon-ora/client
+    rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     autoDeploy: true
