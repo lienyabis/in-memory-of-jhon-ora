@@ -13,6 +13,9 @@ export default function Memories(){
   const [light,setLight]=useState('');
   const [sending,setSending]=useState(false);
   const inputRef = useRef(null);
+  const MAX_FILES = 6;
+  const MAX_MB = 8;
+  const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   const load=()=>api.get('/api/comments').then(r=>setData(r.data)).catch(()=>{});
   useEffect(()=>{ load(); },[]);
   useReveal(data ? data.total : 'empty');
@@ -22,21 +25,29 @@ export default function Memories(){
     return ()=>urls.forEach(u=>URL.revokeObjectURL(u));
   },[files]);
   const pick=(e)=>{
-    const chosen = Array.from(e.target.files||[]).filter(f=>/^image\//.test(f.type));
-    if(chosen.length !== (e.target.files||[]).length) setErr('Only image files can be attached.');
-    setFiles(chosen.slice(0,6));
-    if(chosen.length>6) setErr('You can attach up to 6 photos. Only the first 6 were kept.');
+    const all = Array.from(e.target.files||[]);
+    const rejected = all.filter(f=>!ALLOWED.includes(f.type));
+    const tooBig = all.filter(f=>ALLOWED.includes(f.type) && f.size > MAX_MB*1024*1024);
+    const chosen = all.filter(f=>ALLOWED.includes(f.type) && f.size <= MAX_MB*1024*1024);
+    if(rejected.length) setErr('Only JPG, PNG, GIF or WEBP photos are allowed ('+rejected.length+' file(s) skipped).');
+    else if(tooBig.length) setErr('Each photo must be '+MAX_MB+'MB or smaller ('+tooBig.length+' file(s) skipped).');
+    setFiles(chosen.slice(0,MAX_FILES));
+    if(chosen.length>MAX_FILES) setErr('You can attach up to '+MAX_FILES+' photos. Only the first '+MAX_FILES+' were kept.');
   };
   const submit=async(e)=>{
     e.preventDefault(); setErr(''); setInfo('');
     if(!user){ setErr('Please sign in or sign up to leave a memory.'); return; }
     if(!msg.trim()){ setErr('Please write your memory/message first.'); return; }
-    if(files.length>6){ setErr('You can attach up to 6 photos.'); return; }
+    if(files.length>MAX_FILES){ setErr('You can attach up to '+MAX_FILES+' photos.'); return; }
+    const bad = files.find(f=>!ALLOWED.includes(f.type));
+    if(bad){ setErr('"'+(bad.name||'photo')+'" is not allowed. Use JPG, PNG, GIF or WEBP.'); return; }
+    const big = files.find(f=>f.size > MAX_MB*1024*1024);
+    if(big){ setErr('"'+(big.name||'photo')+'" is too large. Each photo must be '+MAX_MB+'MB or smaller.'); return; }
     setSending(true);
     try{
       const fd=new FormData();
       fd.append('message',msg.trim());
-      files.forEach(f=>fd.append('images',f,f.name));
+      files.forEach(f=>fd.append('images[]',f,f.name));
       const r=await api.post('/api/comments',fd);
       setInfo(r.data.message);
       setMsg(''); setFiles([]);

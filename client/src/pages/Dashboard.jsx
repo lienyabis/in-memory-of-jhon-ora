@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api';
+import api, { imgUrl } from '../api';
 import { useAuth } from '../AuthContext';
 export default function Dashboard(){
   const { user } = useAuth();
@@ -62,7 +62,7 @@ export default function Dashboard(){
           <b>{c.name}</b> <span className="badge">{c.relation}{c.batchLevel?` - ${c.batchLevel}`:''}</span> <span className="badge">{c.status}</span>
           {done && <span className="badge" style={{background:'#f1f5f9'}}>read-only</span>}
           <p style={{fontFamily:'Arial'}}>{c.message}</p>
-          {(Array.isArray(c.images)&&c.images.length?c.images:(c.image?[c.image]:[])).slice(0,4).map((s,i)=><img key={i} src={s} alt="" style={{width:120,height:90,objectFit:'cover',borderRadius:8,marginRight:6}} />)}
+          {(Array.isArray(c.images)&&c.images.length?c.images:(c.image?[c.image]:[])).slice(0,4).map((s,i)=><img key={i} src={imgUrl(s)} alt="" style={{width:120,height:90,objectFit:'cover',borderRadius:8,marginRight:6}} />)}
           <div style={{fontFamily:'Arial',fontSize:12,color:'#64748b'}}>{c.email} - {new Date(c.createdAt).toLocaleString()}{c.reviewedBy ? ` • reviewed by ${c.reviewedBy}` : ''}</div>
           <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
             <button className="btn" style={{padding:'6px 14px'}} disabled={done} title={done?'Already '+c.status:''} onClick={()=>review(c.id,'approved')}>{c.status==='approved' ? '✓ Approved' : 'Approve'}</button>

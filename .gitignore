@@ -16,12 +16,20 @@ coverage/
 .env.local
 .env.*.local
 *.env
+backend/.env
+client/.env
+client/.env.production
+
+# ===== Legacy Node backend (kept for reference, not used in prod) =====
 server/.env
 server/db.json
 
 # ===== Runtime / user uploads =====
 server/uploads/*
 !server/uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.htaccess
+backend/mail.log
 
 # ===== Logs =====
 logs/
@@ -45,3 +53,4 @@ desktop.ini
 # ===== Misc =====
 .cache/
 *.tsbuildinfo
+

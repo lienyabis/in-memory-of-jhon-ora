@@ -1,7 +1,7 @@
 import axios from 'axios';
-// In production (Render) set VITE_API_URL to the backend URL,
-// e.g. https://jhon-ora-memorial.onrender.com
-// Local dev: empty baseURL so Vite proxy handles /api + /uploads.
+// Production (Render): set VITE_API_URL to the PHP backend URL,
+// e.g. https://your-backend.infinityfreeapp.com
+// Local dev: empty baseURL so Vite proxy forwards /api + /uploads to PHP.
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '' });
 api.interceptors.request.use(cfg => {
   const t = localStorage.getItem('jhon_token');
@@ -10,6 +10,7 @@ api.interceptors.request.use(cfg => {
 });
 export const apiBase = import.meta.env.VITE_API_URL || '';
 // Resolve an image path (/uploads/...) against the API host in production.
+// The PHP backend may also return absolute URLs — those pass through.
 export const imgUrl = src => {
   if (!src) return '';
   if (/^https?:\/\//.test(src)) return src;

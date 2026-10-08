@@ -1,0 +1,7 @@
+# Never execute scripts from the uploads folder (photo uploads live here)
+RemoveHandler .php .phtml .php3 .php4 .php5
+RemoveType .php .phtml
+<FilesMatch "\.(php|phtml|phar|cgi|pl)$">
+  Require all denied
+</FilesMatch>
+Options -ExecCGI -Indexes

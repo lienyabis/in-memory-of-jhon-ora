@@ -1,0 +1,19 @@
+# Jhon Ora Memorial backend — Apache rules (InfinityFree uses Apache)
+RewriteEngine On
+
+# Pass Authorization header to PHP (needed for Bearer JWT)
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule ^(.*)$ - [E=HTTP_AUTHORIZATION:%1]
+
+# Route /api/... to api.php with PATH_INFO
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api(/.*)?$ api.php$1 [QSA,L]
+
+# Protect secrets / internals
+<FilesMatch "^(\.env|composer\.json|composer\.lock)$">
+  Require all denied
+</FilesMatch>
+<Files "mail.log">
+  Require all denied
+</Files>
