@@ -37,6 +37,15 @@ if ($segments === ['api', 'auth', 'signup']) route_auth_signup($pdo, $method);
 if ($segments === ['api', 'auth', 'login']) route_auth_login($pdo, $method);
 if ($segments === ['api', 'auth', 'me']) route_auth_me($pdo, $method);
 if ($segments === ['api', 'auth', 'me', 'notify']) route_auth_notify($pdo, $method);
+// Account settings (any logged-in user)
+if ($segments === ['api', 'auth', 'me', 'password']) route_auth_password($pdo, $method);
+if ($segments === ['api', 'auth', 'me', 'email']) route_auth_email($pdo, $method);
+if ($segments === ['api', 'auth', 'me', 'avatar']) route_auth_avatar($pdo, $method);
+
+// Public avatar bytes: GET /api/avatars/{userId} (no login needed)
+if (count($segments) === 3 && $segments[0] === 'api' && $segments[1] === 'avatars' && $method === 'GET') {
+    serve_avatar_blob($pdo, $segments[2]);
+}
 
 // Comments
 if ($segments === ['api', 'comments']) {
@@ -45,10 +54,24 @@ if ($segments === ['api', 'comments']) {
     json_error('Method not allowed', 405);
 }
 if ($segments === ['api', 'comments', 'mine']) route_comments_mine($pdo, $method);
+// Owner edit / delete: PUT|DELETE /api/comments/{id}
+if (count($segments) === 3 && $segments[0] === 'api' && $segments[1] === 'comments' && $segments[2] !== 'mine') {
+    if ($method === 'PUT') route_comments_update($pdo, $method, $segments[2]);
+    if ($method === 'DELETE') route_comments_delete($pdo, $method, $segments[2]);
+}
+// Owner adds photos while editing: POST /api/comments/{id}/images
+if (count($segments) === 4 && $segments[0] === 'api' && $segments[1] === 'comments'
+    && $segments[2] !== 'mine' && $segments[3] === 'images' && $method === 'POST') {
+    route_comment_add_images($pdo, $method, $segments[2]);
+}
 
 // Public BLOB photo: GET /api/photos/{id} (no login needed, same as feed)
 if (count($segments) === 3 && $segments[0] === 'api' && $segments[1] === 'photos' && $method === 'GET') {
     serve_photo_blob($pdo, $segments[2]);
+}
+// Owner/admin removes ONE uploaded photo: DELETE /api/photos/{id}
+if (count($segments) === 3 && $segments[0] === 'api' && $segments[1] === 'photos' && $method === 'DELETE') {
+    route_photo_delete($pdo, $method, $segments[2]);
 }
 
 // Admin
@@ -60,6 +83,7 @@ if (count($segments) >= 3 && $segments[0] === 'api' && $segments[1] === 'admin')
     if (count($rest) === 2 && $rest[0] === 'comments' && $method === 'DELETE') admin_comment_delete($pdo, $me, $rest[1]);
     if ($rest === ['users'] && $method === 'GET') admin_users_list($pdo, $me);
     if ($rest === ['users', 'admin'] && $method === 'POST') admin_user_create($pdo, $me);
+    if (count($rest) === 3 && $rest[0] === 'users' && $rest[2] === 'role' && $method === 'PUT') admin_user_role($pdo, $me, $rest[1]);
     if (count($rest) === 2 && $rest[0] === 'users' && $method === 'DELETE') admin_user_delete($pdo, $me, $rest[1]);
     if ($rest === ['options'] && $method === 'GET') admin_options_get($pdo, $me);
     if ($rest === ['options'] && $method === 'POST') admin_options_add($pdo, $me);

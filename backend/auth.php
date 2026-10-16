@@ -49,6 +49,8 @@ function public_user($u) {
         'batchLevel' => $u['batch_level'],
         'notify' => (bool)$u['notify'],
         'createdAt' => $u['created_at'],
+        // Profile picture URL (public endpoint; 404 when none -> UI falls back)
+        'avatar' => '/api/avatars/' . $u['id'],
     ];
 }
 

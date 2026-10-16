@@ -3,6 +3,7 @@
 // On InfinityFree free hosting, outbound SMTP ports are often blocked,
 // so we try SMTP first, then fall back to PHP mail(), then log.
 require_once __DIR__ . '/config.php';
+if (!function_exists('is_email')) require_once __DIR__ . '/helpers.php';
 
 function anniversary_email_html($name, $siteUrl, $yearsSince, $deathMonth, $deathDay) {
     $n = htmlspecialchars($name ?: 'friend', ENT_QUOTES, 'UTF-8');
@@ -13,7 +14,7 @@ function anniversary_email_html($name, $siteUrl, $yearsSince, $deathMonth, $deat
     . '<div style="font-family:Georgia,serif;max-width:560px;margin:auto;background:#f8fafc;padding:24px;border-radius:12px">'
     . '<div style="text-align:center">'
     . '<div style="font-size:13px;letter-spacing:3px;color:#64748b">IN LOVING MEMORY</div>'
-    . '<h1 style="color:#0f172a;margin:8px 0">Jhon Sollano Ora</h1>'
+    . '<h1 style="color:#0f172a;margin:8px 0">John Paul Sollano Ora</h1>'
     . '<div style="color:#475569;font-style:italic">&ldquo;Princess John Ora&rdquo; &bull; BSICT Class 2020</div>'
     . '</div>'
     . "<p>Dear {$n},</p>"
@@ -23,7 +24,7 @@ function anniversary_email_html($name, $siteUrl, $yearsSince, $deathMonth, $deat
     . "<a href=\"{$s}\" style=\"background:#0f172a;color:#fff;padding:12px 28px;border-radius:999px;text-decoration:none\">Visit Memorial Website</a>"
     . '</div>'
     . '<p style="color:#64748b;font-size:13px">You receive this because you signed up to remember Jhon. Reply to this email if you wish to be removed.</p>'
-    . '<p>With love and remembrance,<br/>Jhon Ora Memorial Family</p>'
+    . '<p>With love and remembrance,<br/>John Paul Ora Memorial Family</p>'
     . '</div>';
 }
 
@@ -111,4 +112,56 @@ function smtp_send($host, $port, $user, $pass, $from, $to, $subject, $html) {
     $cmd('QUIT');
     fclose($fp);
     return (strpos($r, '250') === 0);
+}
+
+// ============================================================
+// Admin review notification: emailed to every admin/superadmin
+// whenever a GUEST submits a comment so it can be moderated.
+// ============================================================
+function admin_review_email_html($guestName, $message, $dashboardUrl) {
+    $n = htmlspecialchars((string)$guestName, ENT_QUOTES, 'UTF-8');
+    $s = htmlspecialchars((string)$dashboardUrl, ENT_QUOTES, 'UTF-8');
+    $excerpt = htmlspecialchars(mb_substr((string)$message, 0, 400, 'UTF-8'), ENT_QUOTES, 'UTF-8');
+    if (function_exists('mb_strlen') && mb_strlen((string)$message, 'UTF-8') > 400) $excerpt .= '…';
+    return ''
+    . '<div style="font-family:Georgia,serif;max-width:560px;margin:auto;background:#f8fafc;padding:24px;border-radius:12px">'
+    . '<div style="text-align:center">'
+    . '<div style="font-size:13px;letter-spacing:3px;color:#64748b">IN LOVING MEMORY</div>'
+    . '<h1 style="color:#0f172a;margin:8px 0">New comment awaiting review</h1>'
+    . '</div>'
+    . "<p><b>{$n}</b> just left a comment on the memorial. Guest comments stay hidden until an admin approves them.</p>"
+    . '<blockquote style="background:#fff;border-left:4px solid #c9a24b;margin:16px 0;padding:12px 16px;border-radius:8px;color:#334155">'
+    . $excerpt
+    . '</blockquote>'
+    . '<div style="text-align:center;margin:20px 0">'
+    . "<a href=\"{$s}\" style=\"background:#0f172a;color:#fff;padding:12px 28px;border-radius:999px;text-decoration:none\">Review comment in Dashboard</a>"
+    . '</div>'
+    . '<p style="color:#64748b;font-size:13px">You receive this because you are an admin of the John Paul Ora Memorial website.</p>'
+    . '</div>';
+}
+
+// Send the review notification to ALL admin/superadmin accounts.
+// Uses the shared send_mail() chain: SMTP -> PHP mail() -> mail.log.
+function notify_admins_new_comment($pdo, $guestName, $message) {
+    try {
+        $rows = $pdo->query("SELECT name, email FROM users WHERE role IN ('admin','superadmin')")->fetchAll();
+    } catch (Exception $e) {
+        return ['sent' => 0, 'failed' => 1];
+    }
+    if (!count($rows)) return ['sent' => 0, 'failed' => 0];
+    if (!function_exists('get_settings')) require_once __DIR__ . '/store.php';
+    $site = SITE_URL;
+    try { $st = get_settings(); if (!empty($st['siteUrl'])) $site = $st['siteUrl']; } catch (Exception $e) {}
+    $dash = rtrim($site, '/') . '/dashboard';
+    $html = admin_review_email_html($guestName, $message, $dash);
+    $subject = 'New guest comment needs review — memorial';
+    @set_time_limit(60);
+    $sent = 0; $failed = 0;
+    foreach ($rows as $r) {
+        if (!is_email($r['email'])) continue;
+        $res = send_mail($r['email'], $subject, $html);
+        if (!empty($res['sent']) || !empty($res['logged'])) $sent++;
+        else $failed++;
+    }
+    return ['sent' => $sent, 'failed' => $failed];
 }

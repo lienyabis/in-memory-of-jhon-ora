@@ -1,7 +1,9 @@
 <?php
 // ============================================================
-// Jhon Ora Memorial — Backend configuration
-// Pure PHP, no framework. Works on InfinityFree free hosting.
+// John Paul Ora Memorial — ALL-IN-ONE configuration
+// Pure PHP, no framework. React build + API live in the SAME folder,
+// so the frontend calls /api/... on its own domain (no CORS needed).
+// Works on InfinityFree free hosting and locally (php -S).
 // ------------------------------------------------------------
 // HOW CONFIG WORKS (priority order):
 //  1. Real environment variables (if host supports them)
@@ -63,26 +65,30 @@ define('SUPERADMIN_NAME', env_val('SUPERADMIN_NAME', 'Super Admin'));
 // ---- Anniversary defaults ----
 define('DEATH_MONTH', (int)env_val('DEATH_MONTH', '09'));
 define('DEATH_DAY', (int)env_val('DEATH_DAY', '29'));
-define('SITE_URL', rtrim(env_val('SITE_URL', 'http://localhost:5173'), '/'));
+define('SITE_URL', rtrim(env_val('SITE_URL', 'http://localhost:8000'), '/'));
 
-// ---- CORS: frontend origin(s) allowed to call this API ----
-// Local: http://localhost:5173
-// Production: https://your-site.onrender.com (comma-separated if more than one)
-define('FRONTEND_URL', env_val('FRONTEND_URL', env_val('CLIENT_URL', 'http://localhost:5173')));
+// ---- CORS: not critical in the all-in-one build (frontend and API share
+// the same origin), but kept for tools/tests that send an Origin header.
+// Local: http://localhost:8000   Production: your InfinityFree URL
+define('FRONTEND_URL', env_val('FRONTEND_URL', env_val('CLIENT_URL', 'http://localhost:8000')));
 
 // ---- Email (SMTP). Leave empty to use PHP mail() / log mode ----
 define('SMTP_HOST', env_val('SMTP_HOST', 'smtp.gmail.com'));
 define('SMTP_PORT', (int)env_val('SMTP_PORT', '587'));
 define('SMTP_USER', env_val('SMTP_USER', ''));
 define('SMTP_PASS', env_val('SMTP_PASS', ''));
-define('SMTP_FROM', env_val('SMTP_FROM', 'In Loving Memory of Jhon Ora <no-reply@jhonora.memorial>'));
+define('SMTP_FROM', env_val('SMTP_FROM', 'In Loving Memory of John Paul Ora <no-reply@jhonora.memorial>'));
 
 // ---- Cron protection (cron-job.org hits cron.php?key=...) ----
 define('CRON_SECRET', env_val('CRON_SECRET', 'change-me-cron-secret'));
 
 // ---- Uploads (stored as MySQL BLOBs in `photos` table) ----
+// Rule: image FORMAT per file + COMBINED batch total <= UPLOAD_MAX_MB.
 define('UPLOAD_MAX_MB', (int)env_val('UPLOAD_MAX_MB', '8'));
 define('UPLOAD_MAX_FILES', (int)env_val('UPLOAD_MAX_FILES', '6'));
+// ---- Comments ----
+// Max characters for one "Leave a Comment" message (enforced in UI + API).
+define('COMMENT_MAX_CHARS', (int)env_val('COMMENT_MAX_CHARS', '500'));
 // Allowed formats: JPG/JPEG, PNG, GIF, WEBP (validated by real file bytes)
 define('UPLOAD_ALLOWED_MIMES', env_val('UPLOAD_ALLOWED_MIMES', 'image/jpeg,image/png,image/gif,image/webp'));
 // Photos larger than this (long edge, px) are downscaled when GD is available

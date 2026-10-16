@@ -3,10 +3,10 @@
 // table; served via GET /api/photos/{id} with correct Content-Type.
 require_once __DIR__ . '/db.php';
 
-// Downscale huge photos to IMAGE_MAX_DIMENSION px (long edge) when GD is
-// available, re-encoded at IMAGE_JPEG_QUALITY. Returns null to keep original.
-function maybe_downscale_image($bytes, $mime, $width, $height) {
-    $max = defined('IMAGE_MAX_DIMENSION') ? (int)IMAGE_MAX_DIMENSION : 1600;
+// Downscale huge photos to $max px (long edge, default IMAGE_MAX_DIMENSION)
+// when GD is available, re-encoded at IMAGE_JPEG_QUALITY. Returns null to keep original.
+function maybe_downscale_image($bytes, $mime, $width, $height, $max = null) {
+    if ($max === null) $max = defined('IMAGE_MAX_DIMENSION') ? (int)IMAGE_MAX_DIMENSION : 1600;
     if ($max <= 0) return null;
     if (max($width, $height) <= $max) return null;
     if (!function_exists('imagecreatefromstring')) return null; // no GD: keep original
@@ -103,3 +103,56 @@ function serve_photo_blob($pdo, $photoId) {
     echo $row['data'];
     exit;
 }
+
+// ============================================================
+// Profile picture (avatar) storage — one BLOB row per user.
+// The frontend crops the chosen picture on a canvas first, so uploads
+// arrive small and square; the server validates + clamps to 512 px.
+// ============================================================
+function store_avatar_blob($pdo, $userId, $validated) {
+    $bytes = $validated['data'];
+    $mime = $validated['mime'];
+    $resized = maybe_downscale_image($bytes, $mime, $validated['width'], $validated['height'], 512);
+    if ($resized !== null) {
+        $bytes = $resized['data'];
+        $mime = $resized['mime'];
+        $validated['width'] = $resized['width'];
+        $validated['height'] = $resized['height'];
+    }
+    $size = strlen($bytes);
+    $st = $pdo->prepare('INSERT INTO avatars (user_id, mime, size_bytes, width, height, data, updated_at)
+        VALUES (?,?,?,?,?,?,NOW())
+        ON DUPLICATE KEY UPDATE mime=VALUES(mime), size_bytes=VALUES(size_bytes),
+            width=VALUES(width), height=VALUES(height), data=VALUES(data), updated_at=NOW()');
+    $st->bindParam(1, $userId);
+    $st->bindParam(2, $mime);
+    $st->bindParam(3, $size, PDO::PARAM_INT);
+    $st->bindParam(4, $validated['width'], PDO::PARAM_INT);
+    $st->bindParam(5, $validated['height'], PDO::PARAM_INT);
+    $st->bindParam(6, $bytes, PDO::PARAM_LOB);
+    $st->execute();
+    return $userId;
+}
+
+function delete_avatar($pdo, $userId) {
+    $pdo->prepare('DELETE FROM avatars WHERE user_id=?')->execute([$userId]);
+}
+
+// Serve the avatar bytes for a user. Missing avatar -> 404 (UI shows initials).
+// no-store so a freshly uploaded/cropped picture shows immediately.
+function serve_avatar_blob($pdo, $userId) {
+    if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', (string)$userId)) json_error('Not found', 404);
+    $st = $pdo->prepare('SELECT mime, size_bytes, data FROM avatars WHERE user_id=? LIMIT 1');
+    $st->execute([$userId]);
+    $row = $st->fetch();
+    if (!$row) json_error('Not found', 404);
+    $allowed = ['image/jpeg' => 1, 'image/png' => 1, 'image/gif' => 1, 'image/webp' => 1];
+    $mime = isset($allowed[$row['mime']]) ? $row['mime'] : 'application/octet-stream';
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (int)$row['size_bytes']);
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    echo $row['data'];
+    exit;
+}
+

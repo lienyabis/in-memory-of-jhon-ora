@@ -37,18 +37,7 @@ function admin_comment_delete($pdo, $me, $id) {
     $st->execute([$id]);
     $c = $st->fetch();
     if (!$c) json_error('Not found', 404);
-    // BLOB photos are child rows -> delete them with the comment.
-    $pdo->prepare('DELETE FROM photos WHERE comment_id=?')->execute([$c['id']]);
-    $pdo->prepare('DELETE FROM comments WHERE id=?')->execute([$c['id']]);
-    // Legacy cleanup: if this comment predates BLOB storage, remove its files.
-    $all = [];
-    $d = json_decode($c['images_json'] ?? '[]', true);
-    if (is_array($d)) $all = array_merge($all, $d);
-    if (!empty($c['image'])) $all[] = $c['image'];
-    foreach (array_unique($all) as $u) {
-        $p = UPLOAD_DIR . '/' . basename((string)$u);
-        if (is_file($p)) @unlink($p);
-    }
+    delete_comment_row($pdo, $c);
     json_out(['ok' => true]);
 }
 
@@ -83,4 +72,31 @@ function admin_user_delete($pdo, $me, $id) {
     if ($t['id'] === $me['id']) json_error('Cannot delete yourself');
     $pdo->prepare('DELETE FROM users WHERE id=?')->execute([$t['id']]);
     json_out(['ok' => true]);
+}
+
+// PUT /api/admin/users/{id}/role  { role: 'guest' | 'admin' }
+// Admins & superadmins can switch any account between guest and admin.
+// The superadmin account is protected, and nobody may change their own role.
+function admin_user_role($pdo, $me, $id) {
+    $st = $pdo->prepare('SELECT * FROM users WHERE id=? LIMIT 1');
+    $st->execute([$id]);
+    $t = $st->fetch();
+    if (!$t) json_error('Not found', 404);
+    $b = body_input();
+    $role = (string)($b['role'] ?? '');
+    if (!in_array($role, ['guest', 'admin'], true)) {
+        json_error('Invalid role. Only "guest" and "admin" can be assigned.');
+    }
+    if ($t['id'] === $me['id']) json_error('You cannot change your own role');
+    if ($t['role'] === 'superadmin') json_error('The superadmin role cannot be changed');
+    if ($t['role'] === $role) {
+        $out = public_user($t);
+        $out['message'] = 'Role unchanged (' . $role . ').';
+        json_out($out);
+    }
+    $pdo->prepare('UPDATE users SET role=? WHERE id=?')->execute([$role, $t['id']]);
+    $row = $pdo->query('SELECT * FROM users WHERE id=' . $pdo->quote($t['id']))->fetch();
+    $out = public_user($row);
+    $out['message'] = $row['name'] . ' is now ' . $role . '.';
+    json_out($out);
 }

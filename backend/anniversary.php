@@ -26,7 +26,7 @@ function check_and_send_anniversary($force = false) {
         try {
             send_mail(
                 $u['email'],
-                'In Loving Memory of Jhon Ora — ' . $y . ' Remembrance',
+                'In Loving Memory of John Paul Ora — ' . $y . ' Remembrance',
                 anniversary_email_html($u['name'], $settings['siteUrl'], 1, $sm, $sd)
             );
             $sent++;

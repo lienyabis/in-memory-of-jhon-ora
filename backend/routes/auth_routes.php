@@ -1,8 +1,11 @@
 <?php
-// Auth routes: options / signup / login / me / me-notify
+// Auth routes: options / signup / login / me / me-notify / account settings
+// (password, email, avatar — see routes/README in the API reference)
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../store.php';
+require_once __DIR__ . '/../images_validate.php';
+require_once __DIR__ . '/../images_store.php';
 
 function route_auth_options($pdo, $method) {
     if ($method !== 'GET') json_error('Method not allowed', 405);
@@ -23,7 +26,7 @@ function route_auth_signup($pdo, $method) {
     $opts = get_options();
     $rel = strtolower(trim($relation));
     $validRels = array_map('strtolower', $opts['relations']);
-    if (!in_array($rel, $validRels, true)) json_error('Please select your relation to Jhon Ora');
+    if (!in_array($rel, $validRels, true)) json_error('Please select your relation to John Paul Ora');
     if ($rel === 'batchmate') {
         $levels = array_map('strtolower', $opts['batchLevels']);
         if (!$batchLevel || !in_array(strtolower((string)$batchLevel), $levels, true)) {
@@ -66,4 +69,80 @@ function route_auth_notify($pdo, $method) {
     $pdo->prepare('UPDATE users SET notify=? WHERE id=?')->execute([$notify, $u['id']]);
     $row = $pdo->query('SELECT * FROM users WHERE id=' . $pdo->quote($u['id']))->fetch();
     json_out(['user' => public_user($row)]);
+}
+
+// ------------------------------------------------------------
+// Account settings: change password
+// PUT /api/auth/me/password  { currentPassword, newPassword }
+// ------------------------------------------------------------
+function route_auth_password($pdo, $method) {
+    if ($method !== 'PUT') json_error('Method not allowed', 405);
+    $u = require_login();
+    $b = body_input();
+    $current = (string)($b['currentPassword'] ?? '');
+    $new = (string)($b['newPassword'] ?? '');
+    if ($current === '' || $new === '') json_error('Current and new password are required');
+    if (!password_verify($current, $u['password_hash'])) json_error('Current password is wrong');
+    if (strlen($new) < 6) json_error('New password must be at least 6 characters');
+    if ($new === $current) json_error('New password must be different from the current one');
+    $hash = password_hash($new, PASSWORD_BCRYPT, ['cost' => 10]);
+    $pdo->prepare('UPDATE users SET password_hash=? WHERE id=?')->execute([$hash, $u['id']]);
+    json_out(['ok' => true, 'message' => 'Password updated successfully.']);
+}
+
+// ------------------------------------------------------------
+// Account settings: change email
+// PUT /api/auth/me/email  { newEmail, password }
+// Re-issues the JWT so the stored token carries the new address.
+// ------------------------------------------------------------
+function route_auth_email($pdo, $method) {
+    if ($method !== 'PUT') json_error('Method not allowed', 405);
+    $u = require_login();
+    $b = body_input();
+    $newEmail = trim((string)($b['newEmail'] ?? ''));
+    $password = (string)($b['password'] ?? '');
+    if (!is_email($newEmail)) json_error('Please enter a valid email address');
+    if ($password === '') json_error('Enter your password to confirm the email change');
+    if (!password_verify($password, $u['password_hash'])) json_error('Password is wrong');
+    if (strcasecmp($newEmail, $u['email']) === 0) json_error('This is already your email address');
+    $st = $pdo->prepare('SELECT id FROM users WHERE LOWER(email)=LOWER(?) AND id<>? LIMIT 1');
+    $st->execute([$newEmail, $u['id']]);
+    if ($st->fetch()) json_error('That email is already used by another account');
+    $pdo->prepare('UPDATE users SET email=? WHERE id=?')->execute([$newEmail, $u['id']]);
+    $row = $pdo->query('SELECT * FROM users WHERE id=' . $pdo->quote($u['id']))->fetch();
+    json_out([
+        'ok' => true,
+        'message' => 'Email address updated successfully.',
+        'token' => jwt_sign($row),
+        'user' => public_user($row),
+    ]);
+}
+
+// ------------------------------------------------------------
+// Account settings: profile picture (upload / remove)
+// POST   /api/auth/me/avatar  multipart field `avatar`
+//         (the picture is cropped on a canvas before upload)
+// DELETE /api/auth/me/avatar
+// ------------------------------------------------------------
+function route_auth_avatar($pdo, $method) {
+    if ($method === 'DELETE') {
+        $u = require_login();
+        delete_avatar($pdo, $u['id']);
+        json_out(['ok' => true, 'message' => 'Profile picture removed.']);
+    }
+    if ($method !== 'POST') json_error('Method not allowed', 405);
+    $u = require_login();
+    if (empty($_FILES['avatar'])) json_error('No picture selected. Choose a photo first.');
+    $file = $_FILES['avatar'];
+    // Reuse the strict image validator (magic bytes, size, allowed formats).
+    $validated = validate_image_upload($file);
+    if ($validated === null) json_error('No picture selected. Choose a photo first.');
+    store_avatar_blob($pdo, $u['id'], $validated);
+    $row = $pdo->query('SELECT * FROM users WHERE id=' . $pdo->quote($u['id']))->fetch();
+    json_out([
+        'ok' => true,
+        'message' => 'Profile picture updated.',
+        'user' => public_user($row),
+        'avatar' => '/api/avatars/' . $u['id'],
+    ]);
 }

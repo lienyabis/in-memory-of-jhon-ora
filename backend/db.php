@@ -59,7 +59,7 @@ function ensure_schema(PDO $pdo) {
         death_month TINYINT NOT NULL DEFAULT 09,
         death_day TINYINT NOT NULL DEFAULT 29,
         site_url VARCHAR(255) NOT NULL DEFAULT '',
-        honoree_name VARCHAR(120) NOT NULL DEFAULT 'Jhon Sollano Ora',
+        honoree_name VARCHAR(120) NOT NULL DEFAULT 'John Paul Sollano Ora',
         aka VARCHAR(120) NOT NULL DEFAULT 'Princess John Ora',
         class_info VARCHAR(160) NOT NULL DEFAULT 'BSICT Students Class 2020',
         last_sent_year INT NULL,
@@ -86,6 +86,17 @@ function ensure_schema(PDO $pdo) {
         data LONGBLOB NOT NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_comment (comment_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Profile pictures (one per user, cropped client-side before upload)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS avatars (
+        user_id VARCHAR(40) PRIMARY KEY,
+        mime VARCHAR(40) NOT NULL,
+        size_bytes INT UNSIGNED NOT NULL,
+        width SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+        height SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+        data LONGBLOB NOT NULL,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     // Default rows
