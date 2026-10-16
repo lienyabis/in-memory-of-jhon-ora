@@ -16,9 +16,11 @@ coverage/
 .env.local
 .env.*.local
 *.env
+.env copy
+
 backend/.env
-client/.env
-client/.env.production
+client/
+database/
 
 # ===== Legacy Node backend (kept for reference, not used in prod) =====
 server/.env
