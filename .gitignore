@@ -1,58 +1,8 @@
-# ===== Dependencies =====
 node_modules/
-**/node_modules/
-
-# ===== Build outputs =====
 dist/
-build/
-**/dist/
-**/build/
-out/
-.next/
-coverage/
-
-# ===== Env & secrets (NEVER commit) =====
-.env
-.env.local
-.env.*.local
-*.env
-.env copy
-
 backend/.env
-client/
-database/
-
-# ===== Legacy Node backend (kept for reference, not used in prod) =====
-server/.env
-server/db.json
-
-# ===== Runtime / user uploads =====
-server/uploads/*
-!server/uploads/.gitkeep
-backend/uploads/*
-!backend/uploads/.htaccess
 backend/mail.log
-
-# ===== Logs =====
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# ===== OS / Editor =====
+backend/uploads/*
+!backend/uploads/.gitkeep
 .DS_Store
-Thumbs.db
-desktop.ini
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-*.bak
-
-# ===== Misc =====
-.cache/
-*.tsbuildinfo
-
+*.log

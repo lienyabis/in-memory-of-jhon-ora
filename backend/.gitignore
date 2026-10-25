@@ -1,0 +1,22 @@
+# ===== Dependencies =====
+node_modules/
+**/node_modules/
+
+# ===== Build outputs =====
+dist/
+build/
+**/dist/
+**/build/
+out/
+.next/
+coverage/
+
+# ===== Env & secrets (NEVER commit) =====
+.env
+.env.local
+.env.*.local
+*.env
+.env copy
+
+
+

@@ -1,175 +1,133 @@
-# In Loving Memory of John Paul Sollano Ora 🕊️ — ALL-IN-ONE (React + PHP + MySQL)
+# John Paul Ora Memorial — React + PHP + MySQL (split build)
 
-One single project folder = **compiled React frontend + pure PHP backend + MySQL**.
-No separate API project, no CORS, no `VITE_API_URL` — the site and the API share
-the same domain, so it hosts **free on InfinityFree** and also runs locally.
+A separate, self-contained rebuild of the `memorial-all-in-one` site with the
+**exact same design, text and behavior**, split into:
 
-```
-memorial-fullstack/
-├── index.html · assets/ · jhon_ora.jpeg … compiled React build (the site)
-├── api.php · auth.php · db.php · routes/ · store.php · mailer.php …
-│              … pure PHP API (same folder, same domain)
-├── .htaccess      Apache: /api rewrite + SPA fallback (InfinityFree)
-├── router.php     local router for `php -S`
-├── config.php     all settings (DB, secrets, URLs) — EDIT FOR PRODUCTION
-├── .env           local settings (optional on hosting)
-├── install.php    setup checker — DELETE after going live
-├── cron.php       daily anniversary sender (cron-job.org)
-├── start-local.bat one-click local server
-├── client/        React Vite source (for rebuilding the frontend)
-└── database/      MySQL schema.sql reference
-```
+- `frontend/` — Vite + React SPA (compiled CSS from the original build, copied verbatim)
+- `backend/`  — pure PHP REST API (no framework, no Composer dependencies)
+- `database/` — optional SQL schema (the backend also auto-creates tables)
 
-**Why this works without API development:** the React build was compiled with an
-empty API base URL, so every request goes to `/api/...` **on its own domain**.
-`.htaccess` (production) and `router.php` (local) route those to `api.php` and
-send React routes (`/memories`, `/login`, `/signup`, `/dashboard`) back to
-`index.html`.
+Honoree: **John Paul Sollano Ora** ("Princess John Ora"), BSICT Class 2020.
 
----
+## Requirements
 
-## 1. Local testing (Windows, WAMP/XAMPP)
+- PHP 8.0+ with PDO MySQL (and optionally GD for image downscaling)
+- MySQL 5.7+ / MariaDB 10.3+
+- Node.js 18+ (for the frontend dev server / build)
 
-Requirements: **PHP 8+**, **MySQL running** (WAMP shown below), nothing else.
+## Local development (two terminals)
 
-```powershell
-cd "memorial-fullstack"
-php setup_local.php        # creates the `memorial` database (stock WAMP: root / no password)
-start-local.bat            # or: php -S localhost:8000 router.php
+### 1) Backend (PHP API on :8000)
+
+```bash
+cd memorial-react-php-mysql/backend
+# edit .env first: set DB_* and a SUPERADMIN_PASSWORD (see below)
+php -S localhost:8000 router.php
 ```
 
-Open **http://localhost:8000** — the full site runs (frontend + API same origin).
+- `.env` is already copied from `.env.example` for local dev.
+- **Important:** set `SUPERADMIN_PASSWORD` in `backend/.env` *before the first
+  request*. The superadmin account is seeded once, and its password hash is not
+  regenerated later. Default local email: `superadmin@jhonora.memorial`.
+- Tables + seed rows are created automatically on first request
+  (`backend/db.php`), or import `database/schema.sql` manually.
+- Health check: open <http://localhost:8000/api/health>
 
-- Setup checker: http://localhost:8000/install.php — every row should be **PASS**
-  (tables auto-create, superadmin is seeded on first request).
-- Sign in at `/login` with the superadmin from `.env`:
-  `superadmin@jhonora.memorial` / `JhonOra2024!`
-- Not stock WAMP? Edit `.env` (`DB_HOST/DB_NAME/DB_USER/DB_PASS`) — it is read
-  before the defaults in `config.php`.
-- Anniversary test: http://localhost:8000/cron.php?key=change-me-cron-secret
-  (emails go to `mail.log` when SMTP is empty).
+### 2) Frontend (Vite on :5173)
 
----
-
-## 2. Hosting free on InfinityFree (one folder, no API setup)
-
-1. **Create account:** [infinityfree.com](https://www.infinityfree.com) →
-   *Sign Up* → *Create Account* → free subdomain
-   (`something.infinityfreeapp.com`) → open **Control Panel**.
-2. **Create the database:** Control Panel → **MySQL Databases** → create one.
-   Copy the four values: **MySQL Host** (`sqlXXX.infinityfree.com` — NOT
-   (Alternatively upload `.env.example` renamed to `.env` with the same edits —
-   `.htaccess` blocks web access to it.)
-4. **Upload with FTP:** Control Panel → *Account Details* → *FTP Details*
-   (use FileZilla/WinSCP). Upload the **contents** of `memorial-fullstack/`
-   into `htdocs/` — including the hidden `.htaccess` file.
-5. **Visit** `https://something.infinityfreeapp.com/install.php` — every row
-   should be PASS. Then **delete `install.php`** before going live.
-
----
-
-## 3. Rebuilding the React frontend
-
-The `client/` folder holds the Vite source. To regenerate the compiled build:
-
-```powershell
-cd client
+```bash
+cd memorial-react-php-mysql/frontend
 npm install
-npm run build      # outputs to client/dist/
+npm run dev
 ```
 
-Copy `client/dist/` contents (`index.html`, `assets/`) into the project root
-alongside the PHP files. The build uses an empty API base URL so all requests
-stay same-origin (`/api/...`).
+Open <http://localhost:5173>. In dev mode Vite proxies `/api` and `/uploads`
+to `http://localhost:8000` (see `vite.config.js`), so no CORS issues locally.
+`frontend/.env.development` sets `VITE_API_URL=` (empty = same origin = proxy).
 
----
+## Frontend production build
 
-## 4. API reference (unchanged contract)
+```bash
+cd frontend
+# set the API base URL for your hosted backend:
+#   echo VITE_API_URL=https://your-api.example.com > .env.production
+npm run build        # outputs static files to frontend/dist/
+```
 
-- `GET /api/health` · `GET /api/auth/options`
-- `POST /api/auth/signup|login` · `GET /api/auth/me` · `PUT /api/auth/me/notify`
-- **Account settings (any signed-in user):**
-  - `PUT /api/auth/me/password` — `{currentPassword, newPassword}`
-  - `PUT /api/auth/me/email` — `{newEmail, password}` (returns a fresh token)
-  - `POST /api/auth/me/avatar` (multipart `avatar`) · `DELETE /api/auth/me/avatar`
-  - `GET /api/avatars/{userId}` — public picture bytes (BLOB, `no-store`)
-- `GET /api/comments` (public approved by year) · `POST /api/comments`
-  (auth, multipart `message` + `images[]`, **max 500 chars**) · `GET /api/comments/mine`
-- **Own-comment management (author or admin):**
-  - `PUT /api/comments/{id}` — edit text (guest edits go back to `pending`)
-  - `POST /api/comments/{id}/images` — append photos (multipart `images[]`)
-  - `DELETE /api/comments/{id}` — removes the comment + its photos
-  - `DELETE /api/photos/{id}` — remove ONE uploaded photo
-- `GET /api/admin/{comments?status=,users,options,settings,notifications,stats}`
-- `PUT /api/admin/comments/{id}` · `DELETE /api/admin/comments/{id}`
-- `POST /api/admin/users/admin` · `DELETE /api/admin/users/{id}`
-  · `PUT /api/admin/users/{id}/role` — `{role: guest|admin}` (admin & superadmin;
-  superadmin account and your own role are protected)
-- `POST|DELETE /api/admin/options` · `PUT /api/admin/settings`
----
+Deploy `frontend/dist/` to any static host (Vercel, Netlify, InfinityFree HTML
+dir, GitHub Pages, …). The API base URL is baked in at build time from
+`VITE_API_URL` (leave it empty if the API is served from the same domain under
+`/api`).
 
-## 5. Features
+## Backend production (shared hosting, e.g. InfinityFree)
 
-- **Signup:** active email, relation (friend/family/batchmate/relatives +
-  custom in dashboard), batchmate → College/Highschool/Elementary/Others
-  (+ custom), password min 6.
-- **Comments:** signed-in users post with up to 6 photos (8 MB each, images
-  only) → guests go to **pending** → admin/superadmin approve → shown grouped
-  by year as a photo grid. Admin posts publish immediately.
-- **Photos:** stored as `LONGBLOB` rows (auto-created `photos` table), server-
-  validated by real magic bytes, downscaled to 1600 px when GD is available.
-- **Dashboard:** review comments, create admins, signup options, anniversary
-  date + site URL, email log, stats.
-- **Anniversary email:** yearly on the death date, all `notify=1` accounts get
-  an email with a site link.
+1. Upload everything in `backend/` to the add-on/subdomain document root
+   (`.htaccess` rewrites `/api/...` to `api.php`; `router.php`/`.user.ini` are
+   for the local `php -S` server and PHP config).
+2. Create the MySQL database in cPanel and either import
+   `database/schema.sql` or let the backend auto-create tables on first hit.
+3. Edit `backend/.env` (protected by `.htaccess`) or the defaults in
+   `config.php`: `DB_*`, `SUPERADMIN_*`, `SITE_URL` (this API's own URL, used
+   in anniversary email links), `FRONTEND_URL` (the React site URL — used for
+   CORS), `SMTP_*` for anniversary emails.
+4. Cron for the yearly anniversary email (runs at 6am on the configured
+   death anniversary date — see Dashboard → Anniversary & Site):
+   `php cron.php?key=YOUR_CRON_SECRET` (schedule daily; it no-ops until the
+   date). You can also trigger manually from the dashboard ("Send email now")
+   or `php cron.php?key=...&force=1`.
 
----
+## API overview (`backend/api.php`)
 
-## 6. Troubleshooting
+| Method + path                        | Auth     | Purpose |
+| ------------------------------------ | -------- | ------- |
+| `GET  /api/health`                   | –        | health check |
+| `GET  /api/auth/options`             | –        | signup relation/batch options |
+| `POST /api/auth/signup`              | –        | create account (auto sign-in) |
+| `POST /api/auth/login`               | –        | sign in → `{token, user}` |
+| `GET  /api/auth/me`                  | user     | current user |
+| `PUT  /api/auth/me/password`         | user     | change password |
+| `PUT  /api/auth/me/email`            | user     | change email |
+| `POST /api/auth/me/avatar`           | user     | upload profile picture |
+| `DELETE /api/auth/me/avatar`         | user     | remove profile picture |
+| `GET  /api/avatars/{userId}`         | –        | serve profile picture |
+| `GET  /api/comments`                 | –        | approved memories (by year) |
+| `GET  /api/comments/mine`            | user     | own comments |
+| `POST /api/comments`                 | user     | post memory (guests → pending) |
+| `PUT  /api/comments/{id}`            | owner    | edit message (+ add photos) |
+| `POST /api/comments/{id}/images`     | owner    | add photos |
+| `DELETE /api/comments/{id}`          | owner/staff | delete comment + photos |
+| `DELETE /api/photos/{photoId}`       | owner/staff | remove one photo |
+| `GET  /api/photos/{photoId}`         | –        | serve photo (MySQL BLOB) |
+| `GET/PUT /api/admin/*`               | staff    | stats, comment review, users, options, settings, notifications, send-anniversary-now |
 
-| Symptom | Fix |
-|---|---|
-| Site loads, every API call shows "Invalid API response" | `.htaccess` missing in `htdocs/` — re-upload it (hidden file) |
-| `Database connection failed` | Wrong `DB_HOST/DB_NAME/DB_USER/DB_PASS` in `config.php` — host must be `sqlXXX.infinityfree.com`, and the DB user is usually the full name with prefix |
-| `/install.php` shows FAIL rows | Fix the listed row, re-check; delete the file when all PASS |
-| 404 on `/memories`, `/login`… | `.htaccess` not uploaded or `mod_rewrite` issue — re-upload `.htaccess` |
-| Emails not arriving | Check Dashboard → Email log (`mail.log`); configure SMTP or use cron-job.org URL |
-| Photos rejected | JPG/PNG/GIF/WEBP only, ≤ 8 MB each, ≤ 6 files (`UPLOAD_*` in config) |
+Auth uses a stateless HS256 JWT in `Authorization: Bearer …`
+(localStorage key `jhon_token`). Passwords: `password_hash()` bcrypt.
 
----
+## Photo rules (same as original)
 
-## Built With
+- Formats: JPG, PNG, GIF, WEBP (validated by real file bytes server-side)
+- Max **6 files per comment**, combined total **≤ 8MB**
+- Comment messages: **≤ 500 characters**
+- Larger images are downscaled to 1600px long edge when GD is available
 
-- [React](https://reactjs.org/) + [Vite](https://vitejs.dev/) — compiled frontend
-- [Tailwind CSS](https://tailwindcss.com/) + [React Router](https://reactrouter.com/)
-- Pure **PHP** (no framework) backend — PDO MySQL, HS256 JWT (no dependency)
-- [MySQL](https://www.mysql.com/) — `users`, `comments`, `photos`, `avatars`,
-  `options_store`, `settings`, `notifications` tables
-- [InfinityFree](https://www.infinityfreeapp.com) — free one-folder hosting
+## File map
 
-## License
+```
+memorial-react-php-mysql/
+├── frontend/           Vite + React SPA
+│   ├── index.html
+│   ├── vite.config.js  dev proxy /api + /uploads -> :8000
+│   ├── public/jhon_ora.jpeg
+│   └── src/            pages, components, context, lib, index.css
+├── backend/            PHP REST API (no deps)
+│   ├── .env / .env.example
+│   ├── api.php         /api router
+│   ├── router.php      local `php -S` router
+│   ├── db.php          PDO + auto-migrate + superadmin seed
+│   ├── routes/         auth, comments, admin endpoints
+│   ├── anniversary.php cron.php  mailer.php
+│   └── uploads/        legacy /uploads files (photos are MySQL BLOBs)
+└── database/
+    └── schema.sql      optional manual schema (auto-created otherwise)
+```
 
-MIT
-- `POST /api/admin/send-anniversary-now` · `GET /cron.php?key=...`
-- `GET /api/photos/{id}` — public photo bytes (MySQL BLOB, correct
-  Content-Type, 1-year cache)
-
-After a **guest** posts a comment, every admin/superadmin account automatically
-receives a review-notification email (same SMTP → mail() → mail.log fallback
-chain as the anniversary mail).
-
-Run `php api_test.php` (local server required) to exercise all of the above —
-40 checks. The file is blocked from web access by `.htaccess`/`router.php`.
-   `localhost`), **Database Name**, **Username**, **Password**.
-3. **Configure before uploading** — open `config.php` in a text editor and edit
-   the defaults (free hosting has no env panel, editing the file is reliable):
-
-   | Constant | Value |
-   |---|---|
-   | `DB_HOST` | `sqlXXX.infinityfree.com` |
-   | `DB_NAME` / `DB_USER` / `DB_PASS` | from step 2 (user may equal the DB name) |
-   | `JWT_SECRET` | a long random string (32+ chars) |
-   | `CRON_SECRET` | another long random string |
-   | `SITE_URL` | `https://something.infinityfreeapp.com` |
-   | `FRONTEND_URL` | same URL |
-   | `SMTP_*` | optional — leave empty to log emails instead |

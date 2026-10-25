@@ -1,0 +1,27 @@
+# John Paul Ora Memorial - SPLIT backend (API ONLY, no frontend).
+# Apache rules for InfinityFree (and any Apache host).
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)$
+RewriteRule ^(.*)$ - [E=HTTP_AUTHORIZATION:%1]
+# API: /api/... -> api.php with PATH_INFO (CORS enabled in helpers.php)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api(/.*)?$ api.php$1 [QSA,L]
+# Existing files (uploads, *.php) served/executed as-is.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+# API-only backend: everything else is a JSON 404 (no SPA fallback).
+RewriteRule ^ - [R=404,L]
+<FilesMatch "^\.ht">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^(\.env|composer\.json|composer\.lock)$">
+  Require all denied
+</FilesMatch>
+<Files "mail.log">
+  Require all denied
+</Files>
+<Files "api_test.php">
+  Require all denied
+</Files>
