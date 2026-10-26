@@ -9,10 +9,29 @@
   <body>
     <div id="root"></div>
 
-    <audio id="bg-music" autoplay loop>
+    <audio id="bg-music" loop>
       <source src="/Wiz Khalifa - See You Again - Piano Tutorial MEDIUM (ft. Charlie Puth).mp3" type="audio/mpeg">
       Your browser does not support the audio element.
     </audio>
+
+    <script>
+      (function() {
+        var audio = document.getElementById('bg-music');
+        var started = false;
+        function startMusic() {
+          if (started) return;
+          started = true;
+          var playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(function(error) {
+              console.log('Autoplay blocked, waiting for user interaction:', error);
+            });
+          }
+        }
+        document.addEventListener('click', startMusic, { once: true });
+        document.addEventListener('touchstart', startMusic, { once: true });
+      })();
+    </script>
 
     <script type="module" src="/src/main.jsx"></script>
   </body>
