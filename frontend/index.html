@@ -9,27 +9,56 @@
   <body>
     <div id="root"></div>
 
-    <audio id="bg-music" loop>
+    <audio id="bg-music" loop muted playsinline>
       <source src="/Wiz Khalifa - See You Again - Piano Tutorial MEDIUM (ft. Charlie Puth).mp3" type="audio/mpeg">
       Your browser does not support the audio element.
     </audio>
 
+    <button id="music-toggle" title="Enable background music" style="
+      position:fixed; bottom:16px; right:16px; z-index:1000;
+      width:44px; height:44px; border-radius:50%; border:none;
+      background:rgba(15,31,61,.85); color:#fff; font-size:20px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 12px rgba(0,0,0,.3);">🔊</button>
+
     <script>
       (function() {
         var audio = document.getElementById('bg-music');
+        var btn = document.getElementById('music-toggle');
         var started = false;
-        function startMusic() {
+
+        function enableMusic() {
           if (started) return;
           started = true;
+          audio.muted = false;
           var playPromise = audio.play();
           if (playPromise !== undefined) {
-            playPromise.catch(function(error) {
-              console.log('Autoplay blocked, waiting for user interaction:', error);
+            playPromise.catch(function(err) {
+              console.log('Audio play blocked:', err);
             });
           }
+          btn.textContent = '🔇';
+          btn.title = 'Disable background music';
         }
-        document.addEventListener('click', startMusic, { once: true });
-        document.addEventListener('touchstart', startMusic, { once: true });
+
+        function toggleMusic() {
+          if (audio.paused || started === false) {
+            enableMusic();
+          } else {
+            audio.muted = !audio.muted;
+            btn.textContent = audio.muted ? '🔊' : '🔇';
+            btn.title = audio.muted ? 'Enable background music' : 'Disable background music';
+          }
+        }
+
+        btn.addEventListener('click', toggleMusic);
+        btn.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          toggleMusic();
+        }, {passive: false});
+
+        document.addEventListener('click', function() { if (!started) enableMusic(); }, {once: true});
+        document.addEventListener('touchend', function() { if (!started) enableMusic(); }, {once: true, passive: false});
       })();
     </script>
 

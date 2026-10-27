@@ -62,7 +62,14 @@ export default function Home() {
                 const imgs = nf(c)
                 return (
                   <div key={c.id} className="card mem reveal">
-                    {imgs[0] && <img className="main" src={fileUrl(imgs[0])} alt="memory" onClick={() => setLight(fileUrl(imgs[0]))} />}
+                    {imgs[0] && (
+                      <>
+                        <img className="main" src={fileUrl(imgs[0])} alt="memory" onClick={() => setLight(fileUrl(imgs[0]))} />
+                        {imgs.slice(1).map((src, i) => (
+                          <img key={i} className="home-thumb" src={fileUrl(src)} alt="" onClick={() => setLight(fileUrl(src))} />
+                        ))}
+                      </>
+                    )}
                     <div className="name-line" style={{ marginTop: 8 }}>
                       <UserAvatar userId={c.userId} name={c.name} />
                       <b>{c.name}</b>

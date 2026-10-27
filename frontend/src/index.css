@@ -15,6 +15,10 @@
 
 /* ===== Memory main image: fully visible (no crop), capped height ===== */
 img.main,.mem img.main{aspect-ratio:auto;height:auto;max-height:400px;object-fit:contain}
+/* ===== Thumbnail strip: centered below main image ===== */
+.thumbs{display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.thumbs img{width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(15,31,61,.2)}
+.home-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(15,31,61,.2);margin-top:6px}
 
 /* ===== Modern pagination (dashboard lists with more than 10 rows) ===== */
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0 4px;padding-top:12px;border-top:1px solid #e2e8f0;font-family:Arial,sans-serif;font-size:13px;color:#334155}
