@@ -232,7 +232,12 @@ export default function Memories() {
               const mine = !!user && c.userId === user.id
               return (
                 <div key={c.id} className="card mem reveal">
-                  {X[0] && <img className="main" src={fileUrl(X[0])} alt="memory of Jhon" onClick={() => setLight(fileUrl(X[0]))} />}
+                  {X[0] && (
+  <div className="main-img-wrap">
+    <img className="main-bg" src={fileUrl(X[0])} alt="" />
+    <img className="main" src={fileUrl(X[0])} alt="memory of Jhon" onClick={() => setLight(fileUrl(X[0]))} />
+  </div>
+)}
                   {X.length > 1 && (
                     <div className="thumbs">
                       {X.slice(1, 5).map((src, i) => (
